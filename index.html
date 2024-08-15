@@ -71,7 +71,7 @@
     </script>
 
     <script>
-      const ws = new WebSocket("ws://488bd61ec3a2b4.lhr.life");
+      const ws = new WebSocket("ws://88037347ab43d3.lhr.life");
 
       const clientStatus = document.getElementById("client-status");
       let lastestReceivedAt = 0;
@@ -82,6 +82,8 @@
           <div class="w-4 h-4 bg-green-500 rounded-full"></div>
           <span class="ml-2">Connected</span>
         `;
+
+        ws.send(100)
       };
 
       ws.onmessage = (event) => {
@@ -125,3 +127,4 @@
     </script>
   </body>
 </html>
+
