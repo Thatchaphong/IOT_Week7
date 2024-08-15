@@ -19,7 +19,9 @@
   </head>
   <body>
     <div class="container max-w-3xl mx-auto pt-16">
-      <h1 class="font-bold text-2xl">ค่า ... จาก Raspberry Pi 1</h1>
+      <h1 class="font-bold text-2xl">
+        ค่าอุณหภูมิและความชื้นจาก Raspberry Pi 1
+      </h1>
 
       <canvas id="chart-1" class="w-full h-[300px]"></canvas>
 
@@ -40,38 +42,33 @@
     <script>
       // chart
       const ctx = document.getElementById("chart-1");
-      const chart = new Chart(
-        ctx,
-        {
-          type: "line",
-          data: {
-            labels: [],
-            datasets: [
-              {
-                label: "Sensor 1",
-                data: [],
-                fill: false,
-                borderColor: "rgb(75, 192, 192)",
-                tension: 0.1,
-              },
-            ],
-          },
-          options: {
-            scales: {
-              y: {
-                beginAtZero: true,
-              },
+      const chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: "Temperature (°C)",
+              data: [],
+              fill: false,
+              borderColor: "rgb(75, 192, 192)",
+              tension: 0.1,
             },
-          },
+            {
+              label: "Humidity (%)",
+              data: [],
+              fill: false,
+              borderColor: "rgb(192, 75, 75)",
+              tension: 0.1,
+            },
+          ],
         },
-        {
-          animationSteps: 5,
-        }
-      );
+        // ... rest of the options
+      });
     </script>
 
     <script>
-      const ws = new WebSocket("ws://88037347ab43d3.lhr.life");
+      const ws = new WebSocket("wss://b2dce54bc6ef0b.lhr.life");
 
       const clientStatus = document.getElementById("client-status");
       let lastestReceivedAt = 0;
@@ -82,35 +79,34 @@
           <div class="w-4 h-4 bg-green-500 rounded-full"></div>
           <span class="ml-2">Connected</span>
         `;
-
-        ws.send(100)
       };
 
       ws.onmessage = (event) => {
         const message = event.data;
-        const value = parseFloat(message);
-        if (isNaN(value)) {
-          console.error("Invalid sensor value:", message);
-          return;
-        }
-        console.log("Received sensor value:", value);
+        const match = message.match(
+          /Temperature: ([\d.]+)°C, Humidity: ([\d.]+)%/
+        );
+        if (match) {
+          const temperature = parseFloat(match[1]);
+          const humidity = parseFloat(match[2]);
+          console.log("Received temperature:", temperature, "°C");
+          console.log("Received humidity:", humidity, "%");
 
-        // if last message received at less than 5 seconds ago, ignore current message
-        // if (new Date() - lastestReceivedAt < 5000) {
-        //   return;
-        // }
-
-        chart.data.labels.push(new Date().toLocaleTimeString());
-        chart.data.datasets[0].data.push(value);
-        chart.update();
-
-        if (chart.data.labels.length > 20) {
-          chart.data.labels.shift();
-          chart.data.datasets[0].data.shift();
+          // Update chart with temperature data
+          chart.data.labels.push(new Date().toLocaleTimeString());
+          chart.data.datasets[0].data.push(temperature);
           chart.update();
-        }
 
-        lastestReceivedAt = new Date();
+          // Limit to last 20 data points
+          if (chart.data.labels.length > 20) {
+            chart.data.labels.shift();
+            chart.data.datasets[0].data.shift();
+            chart.update();
+          }
+          chart.data.datasets[1].data.push(humidity);
+        } else {
+          console.error("Invalid sensor data format:", message);
+        }
       };
 
       ws.onclose = () => {
@@ -119,12 +115,11 @@
           <div class="w-4 h-4 bg-red-500 rounded-full"></div>
           <span class="ml-2">Disconnected</span>
         `;
-      };
+    };
 
-      ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
-      };
-    </script>
-  </body>
+ws.onerror = (error) => {
+  console.error("WebSocket error:", error);
+};
+</script>
+</body>
 </html>
-
